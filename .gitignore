@@ -1,0 +1,8 @@
+.env
+node_modules/
+.next/
+__pycache__/
+*.pyc
+blog/.next/
+blog/node_modules/
+data/

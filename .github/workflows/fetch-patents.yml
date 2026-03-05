@@ -1,0 +1,50 @@
+name: Patent Insider Auto Fetch
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Fetcher Script
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OUTPUT_DIR: ./blog/src/content/patents
+        run: python scripts/fetcher.py
+
+      - name: Commit and Push changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add blog/src/content/patents/
+          if git diff --cached --quiet; then
+            echo "No new patents to commit."
+          else
+            git commit -m "Auto-update: New patents fetched $(date +'%Y-%m-%d')"
+            echo "Pushing changes..."
+            git remote -v
+            git push origin master
+            echo "Push successful!"
+          fi
